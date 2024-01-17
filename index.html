@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Posts Viewer</title>
+  </head>
+
+  <body>
+    <h1>Posts</h1>
+    <div id="posts-container"></div>
+
+    <h2>Create New Post</h2>
+    <form id="new-post-form">
+      <label for="title">Title:</label>
+      <input type="text" id="title" required><br>
+
+      <label for="author">Author:</label>
+      <input type="text" id="author" required><br>
+
+      <button type="submit">Create Post</button>
+    </form>
+
+    <script>
+      // リクエストを行う関数
+      async function fetchPosts() {
+        try {
+          const response = await fetch('http://localhost:3000/posts');
+          const data = await response.json();
+          displayPosts(data);
+        } catch (error) {
+          console.error('Error fetching posts:', error);
+        }
+      }
+
+      // データを表示する関数
+      function displayPosts(posts) {
+        const container = document.getElementById('posts-container');
+
+        // データが空の場合はメッセージを表示
+        if (posts.length === 0) {
+          container.innerHTML = '<p>No posts available</p>';
+          return;
+        }
+
+        // データを表示
+        const postList = posts.map(post => {
+          return `<div>
+                  <strong>Title:</strong> ${post.title || 'N/A'}<br>
+                  <strong>Author:</strong> ${post.author || 'N/A'}<br>
+                  <strong>ID:</strong> ${post.id || 'N/A'}<br>
+                </div><br>`;
+        }).join('');
+
+        container.innerHTML = postList;
+      }
+
+      // ページ読み込み時にリクエストを行う
+      document.addEventListener('DOMContentLoaded', fetchPosts);
+
+
+
+      // フォームの送信イベントを処理
+      document.getElementById('new-post-form').addEventListener('submit', function (event) {
+        event.preventDefault();
+
+        // フォームからタイトルと著者を取得
+        const titleInput = document.getElementById('title');
+        const authorInput = document.getElementById('author');
+        const newPost = {
+          title: titleInput.value,
+          author: authorInput.value
+        };
+
+        // サーバーに新しい投稿を作成するリクエストを送信
+        createPost(newPost);
+
+        // フォームをクリア
+        titleInput.value = '';
+        authorInput.value = '';
+      });
+
+      // 新しい投稿を作成する関数
+      async function createPost(newPost) {
+        try {
+          const response = await fetch('http://localhost:3000/posts', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(newPost),
+          });
+          const data = await response.json();
+          // 作成した投稿を表示
+          fetchPosts();
+        } catch (error) {
+          console.error('Error creating post:', error);
+        }
+      }
+    </script>
+  </body>
+
+</html>

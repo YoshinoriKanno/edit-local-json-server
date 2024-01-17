@@ -26,78 +26,74 @@
     </form>
 
     <script>
-      async function fetchPosts() {
+      const apiUrl = 'http://localhost:3000/posts';
+      const postsContainer = document.getElementById('posts-container');
+      const titleInput = document.getElementById('title');
+      const authorInput = document.getElementById('author');
+      const postIdInput = document.getElementById('post-id');
+      const submitButton = document.querySelector('button[type="submit"]');
+
+      document.addEventListener('DOMContentLoaded', fetchPosts);
+      document.getElementById('new-post-form').addEventListener('submit', handleFormSubmit);
+
+      function fetchPosts() {
         try {
-          const response = await fetch('http://localhost:3000/posts');
-          const data = await response.json();
-          displayPosts(data);
+          fetch(apiUrl)
+            .then(response => response.json())
+            .then(displayPosts)
+            .catch(handleError);
         } catch (error) {
           console.error('Error fetching posts:', error);
         }
       }
 
       function displayPosts(posts) {
-        const container = document.getElementById('posts-container');
-
         if (posts.length === 0) {
-          container.innerHTML = '<p>No posts available</p>';
+          postsContainer.innerHTML = '<p>No posts available</p>';
           return;
         }
 
-        const postList = posts.map(post => {
-          return `<div>
-                <strong>Title:</strong> ${post.title || 'N/A'}<br>
-                <strong>Author:</strong> ${post.author || 'N/A'}<br>
-                <strong>ID:</strong> ${post.id || 'N/A'}<br>
-                <button onclick="deletePost(${post.id})">Delete</button>
-                <button onclick="editPost(${post.id})">Edit</button>
-              </div><br>`;
-        }).join('');
+        const postList = posts
+          .map(post => `
+            <div>
+              <strong>Title:</strong> ${post.title || 'N/A'}<br>
+              <strong>Author:</strong> ${post.author || 'N/A'}<br>
+              <strong>ID:</strong> ${post.id || 'N/A'}<br>
+              <button onclick="deletePost(${post.id})">Delete</button>
+              <button onclick="editPost(${post.id})">Edit</button>
+            </div><br>
+          `)
+          .join('');
 
-        container.innerHTML = postList;
+        postsContainer.innerHTML = postList;
       }
 
-      document.addEventListener('DOMContentLoaded', fetchPosts);
-
-      document.getElementById('new-post-form').addEventListener('submit', function (event) {
+      function handleFormSubmit(event) {
         event.preventDefault();
-
-        const titleInput = document.getElementById('title');
-        const authorInput = document.getElementById('author');
-        const postIdInput = document.getElementById('post-id');
 
         const postData = {
           title: titleInput.value,
-          author: authorInput.value
+          author: authorInput.value,
         };
 
         if (postIdInput.value) {
-          // If post ID exists, it's an update
           updatePost(postIdInput.value, postData);
         } else {
-          // Otherwise, it's a new post
           createPost(postData);
         }
 
-        // Clear the form
-        titleInput.value = '';
-        authorInput.value = '';
-        postIdInput.value = '';
-
-        // Change the form submit button back to Create Post
-        document.querySelector('button[type="submit"]').innerText = 'Create Post';
-      });
+        clearForm();
+        submitButton.innerText = 'Create Post';
+      }
 
       function editPost(postId) {
-        fetch(`http://localhost:3000/posts/${postId}`)
+        fetch(`${apiUrl}/${postId}`)
           .then(response => response.json())
           .then(post => {
-            document.getElementById('title').value = post.title || '';
-            document.getElementById('author').value = post.author || '';
-            document.getElementById('post-id').value = post.id;
-
-            // Change the form submit button to Update Post
-            document.querySelector('button[type="submit"]').innerText = 'Update Post';
+            titleInput.value = post.title || '';
+            authorInput.value = post.author || '';
+            postIdInput.value = post.id;
+            submitButton.innerText = 'Update Post';
           })
           .catch(error => {
             console.error(`Error fetching post with ID ${postId} for editing:`, error);
@@ -106,7 +102,7 @@
 
       async function createPost(newPost) {
         try {
-          const response = await fetch('http://localhost:3000/posts', {
+          const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -122,7 +118,7 @@
 
       async function updatePost(postId, updatedPost) {
         try {
-          const response = await fetch(`http://localhost:3000/posts/${postId}`, {
+          const response = await fetch(`${apiUrl}/${postId}`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
@@ -138,7 +134,7 @@
 
       async function deletePost(postId) {
         try {
-          const response = await fetch(`http://localhost:3000/posts/${postId}`, {
+          const response = await fetch(`${apiUrl}/${postId}`, {
             method: 'DELETE',
           });
           const data = await response.json();
@@ -147,7 +143,18 @@
           console.error(`Error deleting post with ID ${postId}:`, error);
         }
       }
+
+      function clearForm() {
+        titleInput.value = '';
+        authorInput.value = '';
+        postIdInput.value = '';
+      }
+
+      function handleError(error) {
+        console.error('An error occurred:', error);
+      }
     </script>
+
   </body>
 
 </html>

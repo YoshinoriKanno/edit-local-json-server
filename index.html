@@ -19,11 +19,13 @@
       <label for="author">Author:</label>
       <input type="text" id="author" required><br>
 
+      <!-- Hidden input to store post ID for updates -->
+      <input type="hidden" id="post-id" name="post-id">
+
       <button type="submit">Create Post</button>
     </form>
 
     <script>
-      // リクエストを行う関数
       async function fetchPosts() {
         try {
           const response = await fetch('http://localhost:3000/posts');
@@ -34,56 +36,74 @@
         }
       }
 
-      // データを表示する関数
       function displayPosts(posts) {
         const container = document.getElementById('posts-container');
 
-        // データが空の場合はメッセージを表示
         if (posts.length === 0) {
           container.innerHTML = '<p>No posts available</p>';
           return;
         }
 
-        // データを表示
         const postList = posts.map(post => {
           return `<div>
-                  <strong>Title:</strong> ${post.title || 'N/A'}<br>
-                  <strong>Author:</strong> ${post.author || 'N/A'}<br>
-                  <strong>ID:</strong> ${post.id || 'N/A'}<br>
-                  <button onclick="deletePost(${post.id})">Delete</button>
-
-                </div><br>`;
+                <strong>Title:</strong> ${post.title || 'N/A'}<br>
+                <strong>Author:</strong> ${post.author || 'N/A'}<br>
+                <strong>ID:</strong> ${post.id || 'N/A'}<br>
+                <button onclick="deletePost(${post.id})">Delete</button>
+                <button onclick="editPost(${post.id})">Edit</button>
+              </div><br>`;
         }).join('');
 
         container.innerHTML = postList;
       }
 
-      // ページ読み込み時にリクエストを行う
       document.addEventListener('DOMContentLoaded', fetchPosts);
 
-
-
-      // フォームの送信イベントを処理
       document.getElementById('new-post-form').addEventListener('submit', function (event) {
         event.preventDefault();
 
-        // フォームからタイトルと著者を取得
         const titleInput = document.getElementById('title');
         const authorInput = document.getElementById('author');
-        const newPost = {
+        const postIdInput = document.getElementById('post-id');
+
+        const postData = {
           title: titleInput.value,
           author: authorInput.value
         };
 
-        // サーバーに新しい投稿を作成するリクエストを送信
-        createPost(newPost);
+        if (postIdInput.value) {
+          // If post ID exists, it's an update
+          updatePost(postIdInput.value, postData);
+        } else {
+          // Otherwise, it's a new post
+          createPost(postData);
+        }
 
-        // フォームをクリア
+        // Clear the form
         titleInput.value = '';
         authorInput.value = '';
+        postIdInput.value = '';
+
+        // Change the form submit button back to Create Post
+        document.querySelector('button[type="submit"]').innerText = 'Create Post';
       });
 
-      // 新しい投稿を作成する関数
+      function editPost(postId) {
+        fetch(`http://localhost:3000/posts/${postId}`)
+          .then(response => response.json())
+          .then(post => {
+            document.getElementById('title').value = post.title || '';
+            document.getElementById('author').value = post.author || '';
+            document.getElementById('post-id').value = post.id;
+
+            // Change the form submit button to Update Post
+            document.querySelector('button[type="submit"]').innerText = 'Update Post';
+          })
+          .catch(error => {
+            console.error(`Error fetching post with ID ${postId} for editing:`, error);
+          });
+      }
+
       async function createPost(newPost) {
         try {
           const response = await fetch('http://localhost:3000/posts', {
@@ -94,28 +114,39 @@
             body: JSON.stringify(newPost),
           });
           const data = await response.json();
-          // 作成した投稿を表示
           fetchPosts();
         } catch (error) {
           console.error('Error creating post:', error);
         }
       }
 
+      async function updatePost(postId, updatedPost) {
+        try {
+          const response = await fetch(`http://localhost:3000/posts/${postId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(updatedPost),
+          });
+          const data = await response.json();
+          fetchPosts();
+        } catch (error) {
+          console.error(`Error updating post with ID ${postId}:`, error);
+        }
+      }
 
-      // 投稿を削除する関数
       async function deletePost(postId) {
         try {
           const response = await fetch(`http://localhost:3000/posts/${postId}`, {
             method: 'DELETE',
           });
           const data = await response.json();
-          // 削除後に投稿一覧を再取得して表示
           fetchPosts();
         } catch (error) {
           console.error(`Error deleting post with ID ${postId}:`, error);
         }
       }
-
     </script>
   </body>
 

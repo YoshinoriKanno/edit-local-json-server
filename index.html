@@ -50,6 +50,8 @@
                   <strong>Title:</strong> ${post.title || 'N/A'}<br>
                   <strong>Author:</strong> ${post.author || 'N/A'}<br>
                   <strong>ID:</strong> ${post.id || 'N/A'}<br>
+                  <button onclick="deletePost(${post.id})">Delete</button>
+
                 </div><br>`;
         }).join('');
 
@@ -98,6 +100,22 @@
           console.error('Error creating post:', error);
         }
       }
+
+
+      // 投稿を削除する関数
+      async function deletePost(postId) {
+        try {
+          const response = await fetch(`http://localhost:3000/posts/${postId}`, {
+            method: 'DELETE',
+          });
+          const data = await response.json();
+          // 削除後に投稿一覧を再取得して表示
+          fetchPosts();
+        } catch (error) {
+          console.error(`Error deleting post with ID ${postId}:`, error);
+        }
+      }
+
     </script>
   </body>
 

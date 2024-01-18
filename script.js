@@ -54,29 +54,50 @@ function displayPosts(posts, comments) {
     // comments から post.id と一致するコメントを取得
     const postComments = comments.filter(comment => comment.postId === post.id.toString());
 
-    const commentsList = postComments.map(comment => `<li>${comment.text}</li>`).join('');
+    const commentsList = postComments.map(comment => {
+      return `
+              <li>
+                  ${comment.text}
+                  <button onclick="deleteComment(${comment.id}, ${post.id})">Delete Comment</button>
+              </li>
+          `;
+    }).join('');
+
     return `
-            <div>
-                <strong>Title:</strong> ${post.title || 'N/A'}<br>
-                <strong>Author:</strong> ${post.author || 'N/A'}<br>
-                <strong>ID:</strong> ${post.id || 'N/A'}<br>
-                <hr>
-                <h3>Comments</h3>
-                <ul>${commentsList}</ul>
-                <button onclick="deletePost(${post.id})">Delete</button>
-                <button onclick="editPost(${post.id})">Edit</button>
-                <!-- 追加: コメントを表示する部分 -->
-                <div>
-                    <label for="new-comment-${post.id}">New Comment:</label>
-                    <input type="text" id="new-comment-${post.id}" placeholder="Add a new comment">
-                    <button onclick="addCommentToPost(${post.id})">Add Comment</button>
-                </div>
-            </div>
-            <hr>
-            <hr>
-        `;
+          <div>
+              <strong>Title:</strong> ${post.title || 'N/A'}<br>
+              <strong>Author:</strong> ${post.author || 'N/A'}<br>
+              <strong>ID:</strong> ${post.id || 'N/A'}<br>
+              <hr>
+              <h3>Comments</h3>
+              <ul>${commentsList}</ul>
+              <button onclick="deletePost(${post.id})">Delete</button>
+              <button onclick="editPost(${post.id})">Edit</button>
+              <!-- 追加: コメントを表示する部分 -->
+              <div>
+                  <label for="new-comment-${post.id}">New Comment:</label>
+                  <input type="text" id="new-comment-${post.id}" placeholder="Add a new comment">
+                  <button onclick="addCommentToPost(${post.id})">Add Comment</button>
+              </div>
+          </div>
+          <hr>
+          <hr>
+      `;
   }).join('');
   postsContainer.innerHTML = postList;
+}
+
+// コメントの削除
+async function deleteComment(commentId, postId) {
+  try {
+    const response = await fetch(`${commentsUrl}/${commentId}`, {
+      method: 'DELETE',
+    });
+    fetchPosts(); // 全体の投稿を再取得して表示を更新
+  } catch (error) {
+    // エラーが発生した場合はログを出力
+    handleError(`ID ${commentId}のコメントの削除エラー:`, error);
+  }
 }
 
 // フォームのサブミットイベントのハンドラー

@@ -123,21 +123,51 @@ function handleFormSubmit(event) {
 }
 
 // 投稿の編集
-function editPost(postId) {
-  fetchData(`${apiUrl}/${postId}`)
-    .then(post => {
-      // 取得した投稿の情報をフォームにセット
-      titleInput.value = post.title || '';
-      authorInput.value = post.author || '';
-      postIdInput.value = post.id;
-      submitButton.innerText = 'Update Post';
-    })
-    .catch(error => {
-      // エラーが発生した場合はログを出力
-      handleError(`ID ${postId}の投稿の取得エラー:`, error);
-    });
-}
+async function editPost(postId) {
+  try {
+    const response = await fetch(`${apiUrl}/${postId}`);
+    const post = await response.json();
 
+    // 取得した投稿の情報をフォームにセット
+    titleInput.value = post.title || '';
+    authorInput.value = post.author || '';
+    postIdInput.value = post.id;
+    submitButton.innerText = 'Update Post';
+
+    // 編集ボタンをクリックしたときに呼ばれる新しいハンドラーを設定
+    submitButton.onclick = async () => {
+      const updatedPostData = {
+        title: titleInput.value,
+        author: authorInput.value,
+      };
+
+      try {
+        const updateResponse = await fetch(`${apiUrl}/${postId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(updatedPostData),
+        });
+
+        const updatedPost = await updateResponse.json();
+
+        // 更新が成功したらフォームをクリアして元の状態に戻す
+        clearForm();
+        submitButton.innerText = 'Create Post';
+        submitButton.onclick = handleFormSubmit; // 元のハンドラーに戻す
+
+        // 更新後の投稿を反映するために再取得
+        fetchPosts();
+      } catch (error) {
+        handleError(`ID ${postId}の投稿の更新エラー:`, error);
+      }
+    };
+  } catch (error) {
+    // エラーが発生した場合はログを出力
+    handleError(`ID ${postId}の投稿の取得エラー:`, error);
+  }
+}
 // 新しい投稿を作成
 async function createPost(newPost) {
   try {

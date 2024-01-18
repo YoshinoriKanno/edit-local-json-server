@@ -125,7 +125,12 @@ function handleFormSubmit(event) {
 // 投稿の編集
 async function editPost(postId) {
   try {
+    console.log('1. 開始');
+
     const response = await fetch(`${apiUrl}/${postId}`);
+
+    console.log('2. レスポンス取得完了');
+
     const post = await response.json();
 
     // 取得した投稿の情報をフォームにセット
@@ -159,6 +164,9 @@ async function editPost(postId) {
 
         // 更新後の投稿を反映するために再取得
         fetchPosts();
+
+        console.log('3. fetchPosts 完了');
+
       } catch (error) {
         handleError(`ID ${postId}の投稿の更新エラー:`, error);
       }
@@ -166,6 +174,7 @@ async function editPost(postId) {
   } catch (error) {
     // エラーが発生した場合はログを出力
     handleError(`ID ${postId}の投稿の取得エラー:`, error);
+
   }
 }
 // 新しい投稿を作成
@@ -182,10 +191,21 @@ async function createPost(newPost) {
 // 投稿を更新
 async function updatePost(postId, updatedPost) {
   try {
-    const response = await postData(`${apiUrl}/${postId}`, updatedPost);
+    const response = await fetch(`${apiUrl}/${postId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updatedPost),
+    });
+
+    // レスポンスが成功でない場合はエラーをスロー
+    if (!response.ok) {
+      throw new Error(`Failed to update post with ID ${postId}`);
+    }
+
     fetchPosts();
   } catch (error) {
-    // エラーが発生した場合はログを出力
     handleError(`ID ${postId}の投稿の更新エラー:`, error);
   }
 }

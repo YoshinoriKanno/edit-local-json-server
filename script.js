@@ -63,10 +63,9 @@ function displayPosts(posts, comments) {
         <button onclick="addComment(${post.id})">Add Comment</button>
         <!-- 追加: コメントを表示する部分 -->
         <div>
-        <label for="new-comment">New Comment:</label>
-        <input type="text" id="new-comment" placeholder="Add a new comment">
-        <button onclick="addCommentToPost(${post.id})">Add Comment</button>
-        </div>
+        <label for="new-comment-${post.id}">New Comment:</label>
+        <input type="text" id="new-comment-${post.id}" placeholder="Add a new comment">
+        <button onclick="addCommentToPost(${post.id})">Add Comment</button>        </div>
         </div>
         <hr>
         <hr>
@@ -199,7 +198,7 @@ async function addComment(postId) {
 
 // コメントの追加（投稿ごと）
 async function addCommentToPost(postId) {
-  const textInput = document.getElementById('new-comment');
+  const textInput = document.getElementById(`new-comment-${postId}`);
   const text = textInput.value.trim();
 
   if (text) {
@@ -221,6 +220,5 @@ async function addCommentToPost(postId) {
     }
   }
 }
-
 
 

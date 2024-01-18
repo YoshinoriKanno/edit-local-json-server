@@ -7,6 +7,8 @@ const titleInput = document.getElementById('title');
 const authorInput = document.getElementById('author');
 const postIdInput = document.getElementById('post-id');
 const submitButton = document.querySelector('button[type="submit"]');
+let comments = []; // 初期値を空の配列に設定
+
 
 // ページ読み込み時に投稿を取得
 document.addEventListener('DOMContentLoaded', fetchPosts);
@@ -15,20 +17,25 @@ document.addEventListener('DOMContentLoaded', fetchPosts);
 document.getElementById('new-post-form').addEventListener('submit', handleFormSubmit);
 
 // 投稿を取得する関数
-function fetchPosts() {
+async function fetchPosts() {
   try {
-    // Fetchを利用してAPIからデータを取得
-    fetch(apiUrl)
-      .then(response => response.json())
-      .then(displayPosts)
-      .catch(handleError);
+    // Fetchを利用してAPIから投稿データを取得
+    const postsResponse = await fetch(apiUrl);
+    const posts = await postsResponse.json();
+
+    // 投稿データを取得したら、コメントデータを取得
+    const commentsResponse = await fetch('http://localhost:3000/comments'); // コメントデータを取得するURLに変更することが必要
+    const comments = await commentsResponse.json();
+
+    // 投稿とコメントを表示
+    displayPosts(posts, comments);
   } catch (error) {
     console.error('投稿の取得エラー:', error);
   }
 }
-
 // 取得した投稿を表示する関数
-function displayPosts(posts) {
+function displayPosts(posts, comments) {
+
   if (posts.length === 0) {
     // 投稿がない場合はメッセージを表示
     postsContainer.innerHTML = '<p>投稿がありません</p>';
@@ -37,17 +44,35 @@ function displayPosts(posts) {
 
   // 投稿のリストを作成し、HTMLに追加
   const postList = posts
-    .map(post => `
-            <div>
-              <strong>Title:</strong> ${post.title || 'N/A'}<br>
-              <strong>Author:</strong> ${post.author || 'N/A'}<br>
-              <strong>ID:</strong> ${post.id || 'N/A'}<br>
-              <button onclick="deletePost(${post.id})">Delete</button>
-              <button onclick="editPost(${post.id})">Edit</button>
-            </div><br>
-          `)
-    .join('');
+    .map(post => {
+      // comments から post.id と一致するコメントを取得
+      const postComments = comments.filter(comment => comment.postId === post.id.toString());
 
+
+      const commentsList = postComments.map(comment => `<li>${comment.text}</li>`).join('');
+      return `
+      <div>
+        <strong>Title:</strong> ${post.title || 'N/A'}<br>
+        <strong>Author:</strong> ${post.author || 'N/A'}<br>
+        <strong>ID:</strong> ${post.id || 'N/A'}<br>
+        <hr>
+        <h3>Comments</h3>
+        <ul>${commentsList}</ul>
+        <button onclick="deletePost(${post.id})">Delete</button>
+        <button onclick="editPost(${post.id})">Edit</button>
+        <button onclick="addComment(${post.id})">Add Comment</button>
+        <!-- 追加: コメントを表示する部分 -->
+        <div>
+        <label for="new-comment">New Comment:</label>
+        <input type="text" id="new-comment" placeholder="Add a new comment">
+        <button onclick="addCommentToPost(${post.id})">Add Comment</button>
+        </div>
+        </div>
+        <hr>
+        <hr>
+    `;
+    })
+    .join('');
   postsContainer.innerHTML = postList;
 }
 
@@ -147,3 +172,55 @@ function clearForm() {
 function handleError(error) {
   console.error('エラーが発生しました:', error);
 }
+
+
+// コメントの追加
+async function addComment(postId) {
+  const text = prompt('コメントを入力してください:');
+  if (text) {
+    try {
+      const response = await fetch('http://localhost:3000/comments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text,
+          postId: postId.toString(),
+        }),
+      });
+      const data = await response.json();
+      fetchPosts();
+    } catch (error) {
+      console.error('コメントの追加エラー:', error);
+    }
+  }
+}
+
+// コメントの追加（投稿ごと）
+async function addCommentToPost(postId) {
+  const textInput = document.getElementById('new-comment');
+  const text = textInput.value.trim();
+
+  if (text) {
+    try {
+      const response = await fetch('http://localhost:3000/comments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text,
+          postId: postId.toString(),
+        }),
+      });
+      const data = await response.json();
+      fetchPosts(); // 全体の投稿を再取得して表示を更新
+    } catch (error) {
+      console.error('コメントの追加エラー:', error);
+    }
+  }
+}
+
+
+
